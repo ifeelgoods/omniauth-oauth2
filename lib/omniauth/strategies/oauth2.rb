@@ -33,7 +33,12 @@ module OmniAuth
       attr_accessor :access_token
 
       def client
-        ::OAuth2::Client.new(options.client_id, options.client_secret, deep_symbolize(options.client_options))
+        options_used = if custom_config
+                         options.merge custom_config
+                       else
+                         options
+                       end
+        ::OAuth2::Client.new(options_used.client_id, options_used.client_secret, deep_symbolize(options_used.client_options))
       end
 
       credentials do
@@ -95,6 +100,14 @@ module OmniAuth
           hash[key.to_sym] = value.is_a?(Hash) ? deep_symbolize(value) : value
         end
         hash
+      end
+
+      def custom_config
+        if defined?(@@custom_config) && @@custom_config.is_a?(Proc)
+          @@custom_config.call(request)
+        else
+          nil
+        end
       end
 
       def options_for(option)
