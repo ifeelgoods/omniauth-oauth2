@@ -28,8 +28,12 @@ module OmniAuth
 
       attr_accessor :access_token
 
-      def client(additional_options={})
-        options_used = options.merge additional_options
+      def client
+        options_used = if custom_config
+                         options.merge custom_config
+                       else
+                         options
+                       end
         ::OAuth2::Client.new(options_used.client_id, options_used.client_secret, deep_symbolize(options_used.client_options))
       end
 
@@ -46,8 +50,7 @@ module OmniAuth
       end
 
       def request_phase
-        additional_options = @@custom_config.call(request)
-        redirect client(additional_options).auth_code.authorize_url({:redirect_uri => callback_url}.merge(authorize_params))
+        redirect client.auth_code.authorize_url({:redirect_uri => callback_url}.merge(authorize_params))
       end
 
       def authorize_params
@@ -96,10 +99,17 @@ module OmniAuth
         end
       end
 
+      def custom_config
+        if defined?(@@custom_config) && @@custom_config.is_a?(Proc)
+          @@custom_config.call(request)
+        else
+          nil
+        end
+      end
+
       def build_access_token
-        additional_options = @@custom_config.call(request)
         verifier = request.params['code']
-        client(additional_options).auth_code.get_token(verifier, {:redirect_uri => callback_url}.merge(token_params.to_hash(:symbolize_keys => true)))
+        client.auth_code.get_token(verifier, {:redirect_uri => callback_url}.merge(token_params.to_hash(:symbolize_keys => true)))
       end
 
       # An error that is indicated in the OAuth 2.0 callback.

@@ -24,6 +24,12 @@ describe OmniAuth::Strategies::OAuth2 do
       instance = subject.new(app, :client_options => {'ssl' => {'ca_path' => 'foo'}})
       instance.client.options[:connection_opts][:ssl] =~ {:ca_path => 'foo'}
     end
+
+    it 'should call custom config' do
+      subject.any_instance.should_receive(:custom_config)
+      instance = subject.new(app, :client_options => {'ssl' => {'ca_path' => 'foo'}})
+      instance.client
+    end
   end
 
   describe '#authorize_params' do
